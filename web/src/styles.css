@@ -196,6 +196,7 @@ a { color: #111827; }
 }
 .dialog input, .dialog select, .dialog textarea { width: 100%; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.generated { font-size: 13px; color: #6b7280; }
 
 @media (max-width: 900px) {
   .frame, .hero-grid, .split, .stat-row { grid-template-columns: 1fr; }

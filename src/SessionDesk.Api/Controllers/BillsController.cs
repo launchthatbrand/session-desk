@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SessionDesk.Api.Auth;
+using SessionDesk.Api.Briefing;
 using SessionDesk.Api.Data;
 
 namespace SessionDesk.Api.Controllers;
@@ -10,7 +11,7 @@ namespace SessionDesk.Api.Controllers;
 [ApiController]
 [Authorize(Policy = "CommitteeMember")]
 [Route("api/bills")]
-public sealed class BillsController(AppDbContext db, CommitteeContext scope) : ControllerBase
+public sealed class BillsController(AppDbContext db, CommitteeContext scope, BriefingService briefing) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] string? status, [FromQuery] string? q)
@@ -56,6 +57,30 @@ public sealed class BillsController(AppDbContext db, CommitteeContext scope) : C
             Count(BillStatuses.ReportedUnfavorably),
             Count(BillStatuses.TemporarilyPostponed),
             days.Select(day => new DayBucket(day.Day.ToString("yyyy-MM-dd"), day.Action, day.Count)).ToList()));
+    }
+
+    [HttpPost("{id:guid}/brief")]
+    public async Task<IActionResult> Brief(Guid id, CancellationToken cancellationToken)
+    {
+        if (scope.Role == Roles.Viewer)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var outcome = await briefing.RequestAsync(id, cancellationToken);
+        return FromBriefing(outcome, includeDraft: true);
+    }
+
+    [HttpPost("{id:guid}/brief/{briefingId:guid}")]
+    public async Task<IActionResult> Decide(Guid id, Guid briefingId, BriefDecisionRequest request, CancellationToken cancellationToken)
+    {
+        if (scope.Role == Roles.Viewer)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var outcome = await briefing.DecideAsync(id, briefingId, request.Decision, request.Note, cancellationToken);
+        return FromBriefing(outcome, includeDraft: false);
     }
 
     [HttpPost("{id:guid}/actions")]
@@ -149,6 +174,18 @@ public sealed class BillsController(AppDbContext db, CommitteeContext scope) : C
         return Ok(new BillResponse(bill.Id, bill.Number, bill.Title, bill.Sponsor, bill.Status, bill.LastActionText, bill.UpdatedAt));
     }
 
+    private IActionResult FromBriefing(BriefingOutcome outcome, bool includeDraft) => outcome.Kind switch
+    {
+        BriefingKind.Unavailable => StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = outcome.Error }),
+        BriefingKind.NotFound => NotFound(),
+        BriefingKind.Conflict => Conflict(new { error = outcome.Error }),
+        BriefingKind.Empty => StatusCode(StatusCodes.Status502BadGateway, new { error = outcome.Error }),
+        BriefingKind.Withheld => UnprocessableEntity(new { error = outcome.Error }),
+        BriefingKind.Ready when includeDraft => Ok(new BriefResponse(outcome.BriefingId!.Value, outcome.Draft!, outcome.Model!, outcome.PromptVersion!)),
+        BriefingKind.Ready => Ok(new { briefingId = outcome.BriefingId }),
+        _ => StatusCode(StatusCodes.Status500InternalServerError),
+    };
+
     private static string Describe(Bill bill, string action, Hearing? hearing)
     {
         var when = hearing?.StartsAt.ToString("MMM d", CultureInfo.InvariantCulture);
@@ -184,3 +221,7 @@ public sealed record SummaryResponse(
 public sealed record DayBucket(string Day, string Action, int Count);
 
 public sealed record RecordActionRequest(string Action, DateTime? HearingStartsAt, string? Room, string? Note);
+
+public sealed record BriefResponse(Guid BriefingId, string Draft, string Model, string PromptVersion);
+
+public sealed record BriefDecisionRequest(string Decision, string? Note);

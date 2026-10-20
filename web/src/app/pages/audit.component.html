@@ -6,7 +6,12 @@
         <span class="mark">{{ event.billNumber || 'Desk' }}</span>
         <span>
           <strong>{{ event.detail }}</strong>
-          <small>{{ event.actor }}</small>
+          <small>
+            @if (actionLabel(event.action)) {
+              {{ actionLabel(event.action) }} ·
+            }
+            {{ event.actor }}
+          </small>
         </span>
         <span class="muted">{{ when(event.createdAt) }}</span>
       </li>

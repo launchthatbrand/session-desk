@@ -45,7 +45,15 @@ export interface AuditEvent {
   detail: string;
   actor: string;
   action: string;
+  traceId: string | null;
   createdAt: string;
+}
+
+export interface Brief {
+  briefingId: string;
+  draft: string;
+  model: string;
+  promptVersion: string;
 }
 
 export interface LoginResult {
@@ -79,6 +87,14 @@ export class ApiService {
 
   recordAction(id: string, body: { action: string; hearingStartsAt?: string; room?: string; note?: string }) {
     return this.http.post<Bill>(`/api/bills/${id}/actions`, body);
+  }
+
+  brief(id: string) {
+    return this.http.post<Brief>(`/api/bills/${id}/brief`, {});
+  }
+
+  decideBrief(id: string, briefingId: string, decision: 'accept' | 'discard', note?: string) {
+    return this.http.post<{ briefingId: string }>(`/api/bills/${id}/brief/${briefingId}`, { decision, note });
   }
 
   hearings() {

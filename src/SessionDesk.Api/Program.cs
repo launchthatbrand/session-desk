@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Trace;
 using SessionDesk.Api.Auth;
+using SessionDesk.Api.Briefing;
 using SessionDesk.Api.Data;
 using SessionDesk.Api.Seed;
 
@@ -25,7 +27,27 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
         .UseSnakeCaseNamingConvention());
 builder.Services.AddScoped<CommitteeContext>();
+builder.Services.AddHttpClient<IMiniMaxClient, MiniMaxClient>();
+builder.Services.AddScoped<BriefingService>();
 builder.Services.AddSingleton<JwtTokenService>();
+var langfusePublic = builder.Configuration["Langfuse:PublicKey"];
+var langfuseSecret = builder.Configuration["Langfuse:SecretKey"];
+var langfuseBase = builder.Configuration["Langfuse:BaseUrl"];
+if (!string.IsNullOrWhiteSpace(langfusePublic)
+    && !string.IsNullOrWhiteSpace(langfuseSecret)
+    && !string.IsNullOrWhiteSpace(langfuseBase))
+{
+    var basic = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{langfusePublic}:{langfuseSecret}"));
+    builder.Services.AddOpenTelemetry()
+        .WithTracing(tracing => tracing
+            .AddSource(BriefingTelemetry.Name)
+            .AddOtlpExporter(options =>
+            {
+                options.Endpoint = new Uri($"{langfuseBase.TrimEnd('/')}/api/public/otel");
+                options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                options.Headers = $"Authorization=Basic {basic}";
+            }));
+}
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

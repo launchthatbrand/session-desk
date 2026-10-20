@@ -11,6 +11,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Hearing> Hearings => Set<Hearing>();
     public DbSet<BillAction> BillActions => Set<BillAction>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+    public DbSet<AiBriefing> AiBriefings => Set<AiBriefing>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +76,28 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             .WithMany()
             .HasForeignKey(audit => audit.BillId)
             .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<AuditEvent>()
+            .HasOne(audit => audit.Trace)
+            .WithMany()
+            .HasForeignKey(audit => audit.TraceId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<AiBriefing>().ToTable("ai_briefings");
+        modelBuilder.Entity<AiBriefing>()
+            .HasOne(briefing => briefing.Committee)
+            .WithMany()
+            .HasForeignKey(briefing => briefing.CommitteeId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<AiBriefing>()
+            .HasOne(briefing => briefing.Bill)
+            .WithMany()
+            .HasForeignKey(briefing => briefing.BillId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<AiBriefing>()
+            .HasOne(briefing => briefing.Actor)
+            .WithMany()
+            .HasForeignKey(briefing => briefing.ActorUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {

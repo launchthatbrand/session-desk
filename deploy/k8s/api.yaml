@@ -60,6 +60,29 @@ spec:
                 secretKeyRef:
                   name: session-desk-env
                   key: Seed__AdminPassword
+            - name: MiniMax__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: session-desk-env
+                  key: MiniMax__ApiKey
+            - name: Langfuse__BaseUrl
+              valueFrom:
+                secretKeyRef:
+                  name: session-desk-env
+                  key: Langfuse__BaseUrl
+                  optional: true
+            - name: Langfuse__PublicKey
+              valueFrom:
+                secretKeyRef:
+                  name: session-desk-env
+                  key: Langfuse__PublicKey
+                  optional: true
+            - name: Langfuse__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: session-desk-env
+                  key: Langfuse__SecretKey
+                  optional: true
           readinessProbe:
             httpGet:
               path: /api/health
