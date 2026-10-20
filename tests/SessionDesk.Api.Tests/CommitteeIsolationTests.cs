@@ -5,7 +5,11 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using SessionDesk.Api.Briefing;
+using SessionDesk.Api.Search;
+using SessionDesk.Api.Seed;
 using Testcontainers.PostgreSql;
 
 namespace SessionDesk.Api.Tests;
@@ -18,6 +22,14 @@ public sealed class FakeMiniMaxClient : IMiniMaxClient
         Task.FromResult(new MiniMaxCompletion(NextContent, 12, 24));
 }
 
+public sealed class FakeBillSearch : IBillSearch
+{
+    public IReadOnlyList<SearchHit> Hits { get; set; } = [];
+
+    public Task<IReadOnlyList<SearchHit>> SearchAsync(string term, CancellationToken cancellationToken) =>
+        Task.FromResult(Hits);
+}
+
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
@@ -25,6 +37,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         .Build();
 
     public FakeMiniMaxClient MiniMax { get; } = new();
+    public FakeBillSearch Search { get; } = new();
 
     public async Task InitializeAsync() => await _postgres.StartAsync();
 
@@ -37,10 +50,14 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Seed:AdminEmail", "alex.morgan@sessiondesk.local");
         builder.UseSetting("Seed:AdminPassword", "TestPassword!1");
         builder.UseSetting("MiniMax:ApiKey", "test-key");
+        builder.UseSetting("OpenSearch:Url", "http://search.invalid");
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton(MiniMax);
             services.AddSingleton<IMiniMaxClient>(MiniMax);
+            services.AddSingleton(Search);
+            services.AddSingleton<IBillSearch>(Search);
+            services.RemoveAll<IHostedService>();
         });
     }
 }
@@ -74,10 +91,43 @@ public sealed class CommitteeIsolationTests(ApiFactory factory)
         var appropriationBills = await GetBills(login, appropriations);
         var rulesBills = await GetBills(login, rules);
 
-        Assert.Equal(4, appropriationBills.Count);
+        Assert.Contains(appropriationBills, bill => bill.GetProperty("number").GetString() == "SB 1204");
+        Assert.True(appropriationBills.Count > 4);
         Assert.DoesNotContain(appropriationBills, bill => bill.GetProperty("number").GetString() == "SB 1302");
-        Assert.Single(rulesBills);
-        Assert.Equal("SB 1302", rulesBills[0].GetProperty("number").GetString());
+        Assert.Contains(rulesBills, bill => bill.GetProperty("number").GetString() == "SB 1302");
+        Assert.DoesNotContain(rulesBills, bill => bill.GetProperty("number").GetString() == "SB 1204");
+    }
+
+    [Fact]
+    public async Task Search_returns_a_bill_outside_the_selected_committee()
+    {
+        var educationBill = SessionCorpus.BillId("SB 2002");
+        factory.Search.Hits =
+        [
+            new SearchHit(educationBill, "SB 2002", "Harbor marker repair", "Sen. Hale", Guid.NewGuid(), "Education", "120.54", "cites section <em>120.54</em>"),
+        ];
+        var login = await Login("alex.morgan@sessiondesk.local");
+        var appropriations = CommitteeId(login.Body, "Appropriations");
+        var response = await Send(login, appropriations, HttpMethod.Get, "/api/search?q=120.54");
+        response.EnsureSuccessStatusCode();
+        var hits = await response.Content.ReadFromJsonAsync<List<JsonElement>>() ?? [];
+        Assert.Contains(hits, hit => hit.GetProperty("committee").GetString() == "Education");
+    }
+
+    [Fact]
+    public async Task Clerk_cannot_record_an_action_on_another_committees_bill()
+    {
+        var login = await Login("alex.morgan@sessiondesk.local");
+        var appropriations = CommitteeId(login.Body, "Appropriations");
+        var read = await Send(login, appropriations, HttpMethod.Get, $"/api/search/{SessionCorpus.BillId("SB 2002")}");
+        read.EnsureSuccessStatusCode();
+        var response = await Send(
+            login,
+            appropriations,
+            HttpMethod.Post,
+            $"/api/bills/{SessionCorpus.BillId("SB 2002")}/actions",
+            new { action = "bill.note_added", note = "not this committee" });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]

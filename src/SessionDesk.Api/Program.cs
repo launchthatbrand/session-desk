@@ -7,6 +7,7 @@ using OpenTelemetry.Trace;
 using SessionDesk.Api.Auth;
 using SessionDesk.Api.Briefing;
 using SessionDesk.Api.Data;
+using SessionDesk.Api.Search;
 using SessionDesk.Api.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         .UseSnakeCaseNamingConvention());
 builder.Services.AddScoped<CommitteeContext>();
 builder.Services.AddHttpClient<IMiniMaxClient, MiniMaxClient>();
+builder.Services.AddHttpClient<OpenSearchBillSearch>();
+builder.Services.AddScoped<IBillSearch>(services => services.GetRequiredService<OpenSearchBillSearch>());
+builder.Services.AddHostedService<BillIndexService>();
 builder.Services.AddScoped<BriefingService>();
 builder.Services.AddSingleton<JwtTokenService>();
 var langfusePublic = builder.Configuration["Langfuse:PublicKey"];
@@ -93,7 +97,7 @@ await using (var scope = app.Services.CreateAsyncScope())
         }
     }
 
-    await SeedData.EnsureSeededAsync(scope.ServiceProvider);
+    await SeedData.EnsureReadyAsync(scope.ServiceProvider);
 }
 
 app.Run();

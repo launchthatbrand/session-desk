@@ -70,6 +70,8 @@ public sealed class Bill
     public string Title { get; set; } = "";
     public string Sponsor { get; set; } = "";
     public string Status { get; set; } = BillStatuses.Referred;
+    public string Citation { get; set; } = "";
+    public string Body { get; set; } = "";
     public string LastActionText { get; set; } = "";
     public DateTime UpdatedAt { get; set; }
     public Committee Committee { get; set; } = null!;

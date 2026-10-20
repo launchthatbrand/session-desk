@@ -6,6 +6,7 @@ import { DashboardComponent } from './pages/dashboard.component';
 import { BillsComponent } from './pages/bills.component';
 import { CalendarComponent } from './pages/calendar.component';
 import { AuditComponent } from './pages/audit.component';
+import { SearchComponent } from './pages/search.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -18,6 +19,7 @@ export const routes: Routes = [
       { path: 'bills', component: BillsComponent },
       { path: 'calendar', component: CalendarComponent },
       { path: 'audit', component: AuditComponent },
+      { path: 'search', component: SearchComponent },
     ],
   },
   { path: '**', redirectTo: '' },

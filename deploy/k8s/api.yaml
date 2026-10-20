@@ -60,6 +60,11 @@ spec:
                 secretKeyRef:
                   name: session-desk-env
                   key: Seed__AdminPassword
+            - name: OpenSearch__Url
+              valueFrom:
+                secretKeyRef:
+                  name: session-desk-env
+                  key: OpenSearch__Url
             - name: MiniMax__ApiKey
               valueFrom:
                 secretKeyRef:

@@ -27,10 +27,12 @@
     </aside>
     <div class="main">
       <header class="topbar">
-        <label class="search">
-          <span class="sr">Search bills</span>
-          <input type="search" placeholder="Search bills" [value]="search.query()" (input)="onSearch($any($event.target).value)" />
-        </label>
+        <form class="search" role="search" (submit)="submitSearch($event)">
+          <label>
+            <span class="sr">Search bills</span>
+            <input type="search" placeholder="Search bills, text, or citations" [value]="search.query()" (input)="onSearch($any($event.target).value)" />
+          </label>
+        </form>
         <div class="top-actions">
           <label class="sr" for="committee">Committee</label>
           <select id="committee" [value]="auth.committeeId()" (change)="onCommittee($any($event.target).value)">

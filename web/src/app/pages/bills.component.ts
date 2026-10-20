@@ -1,7 +1,8 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService, Bill, Brief } from '../core/api.service';
-import { AuthService, SearchService } from '../core/auth.service';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-bills',
@@ -11,7 +12,7 @@ import { AuthService, SearchService } from '../core/auth.service';
 export class BillsComponent {
   private readonly api = inject(ApiService);
   readonly auth = inject(AuthService);
-  private readonly search = inject(SearchService);
+  private readonly route = inject(ActivatedRoute);
   private readonly forms = inject(FormBuilder);
   readonly bills = signal<Bill[]>([]);
   readonly filter = signal('');
@@ -31,13 +32,19 @@ export class BillsComponent {
   constructor() {
     effect(() => {
       const committeeId = this.auth.committeeId();
-      const query = this.search.query();
       const status = this.filter();
       this.reload();
       if (!committeeId) {
         return;
       }
-      this.api.bills(status || undefined, query || undefined).subscribe((bills) => this.bills.set(bills));
+      this.api.bills(status || undefined).subscribe((bills) => {
+        this.bills.set(bills);
+        const openId = this.route.snapshot.queryParamMap.get('bill');
+        const match = bills.find((bill) => bill.id === openId);
+        if (match) {
+          this.openDialog(match);
+        }
+      });
     });
   }
 

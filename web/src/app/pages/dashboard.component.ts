@@ -1,7 +1,7 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService, AuditEvent, Bill, Hearing, Summary } from '../core/api.service';
-import { AuthService, SearchService } from '../core/auth.service';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -11,7 +11,6 @@ import { AuthService, SearchService } from '../core/auth.service';
 export class DashboardComponent {
   private readonly api = inject(ApiService);
   readonly auth = inject(AuthService);
-  private readonly search = inject(SearchService);
   readonly summary = signal<Summary | null>(null);
   readonly bills = signal<Bill[]>([]);
   readonly hearing = signal<Hearing | null>(null);
@@ -21,7 +20,6 @@ export class DashboardComponent {
   constructor() {
     effect(() => {
       const committeeId = this.auth.committeeId();
-      const query = this.search.query();
       if (!committeeId) {
         return;
       }
@@ -29,7 +27,7 @@ export class DashboardComponent {
         this.summary.set(summary);
         this.bars.set(this.buildBars(summary));
       });
-      this.api.bills(undefined, query).subscribe((bills) => this.bills.set(bills.slice(0, 4)));
+      this.api.bills().subscribe((bills) => this.bills.set(bills.slice(0, 4)));
       this.api.hearings().subscribe((hearings) => {
         const upcoming = hearings.find((item) => new Date(item.startsAt).getTime() >= Date.now());
         this.hearing.set(upcoming ?? null);

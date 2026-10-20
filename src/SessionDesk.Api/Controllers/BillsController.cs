@@ -14,21 +14,12 @@ namespace SessionDesk.Api.Controllers;
 public sealed class BillsController(AppDbContext db, CommitteeContext scope, BriefingService briefing) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] string? status, [FromQuery] string? q)
+    public async Task<IActionResult> List([FromQuery] string? status)
     {
         var query = db.Bills.AsNoTracking().Where(bill => bill.CommitteeId == scope.CommitteeId);
         if (!string.IsNullOrWhiteSpace(status))
         {
             query = query.Where(bill => bill.Status == status);
-        }
-
-        if (!string.IsNullOrWhiteSpace(q))
-        {
-            var term = q.Trim().ToLowerInvariant();
-            query = query.Where(bill =>
-                bill.Number.ToLower().Contains(term)
-                || bill.Title.ToLower().Contains(term)
-                || bill.Sponsor.ToLower().Contains(term));
         }
 
         var bills = await query

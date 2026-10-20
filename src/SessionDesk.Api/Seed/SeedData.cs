@@ -47,11 +47,11 @@ public static class SeedData
         };
         db.Hearings.Add(hearing);
 
-        var water = Bill(appropriations.Id, "SB 1200", "Water storage grants", "Sen. Hale", BillStatuses.Referred, "SB 1200 referred to Appropriations");
-        var buses = Bill(appropriations.Id, "SB 1204", "School bus inspection cycle", "Sen. Ortiz", BillStatuses.OnAgenda, "SB 1204 placed on the Feb 12 agenda");
-        var cyber = Bill(appropriations.Id, "SB 1210", "Municipal cyber incident reports", "Sen. Cole", BillStatuses.Referred, "SB 1210 referred to Appropriations");
-        var coastal = Bill(appropriations.Id, "SB 1218", "Coastal permit timelines", "Sen. Hale", BillStatuses.ReportedFavorably, "SB 1218 reported favorably");
-        var publication = Bill(rules.Id, "SB 1302", "Rules publication corrections", "Sen. Brooks", BillStatuses.Referred, "SB 1302 referred to Rules");
+        var water = Bill(appropriations.Id, "SB 1200", "Water storage grants", "Sen. Hale", BillStatuses.Referred, "SB 1200 referred to Appropriations", "373.459", "Creates a grant program for regional water storage. The bill cites section 373.459 and requires an annual public report.");
+        var buses = Bill(appropriations.Id, "SB 1204", "School bus inspection cycle", "Sen. Ortiz", BillStatuses.OnAgenda, "SB 1204 placed on the Feb 12 agenda", "1006.25", "Sets a school bus inspection cycle for district fleets. The bill cites section 1006.25 and keeps the current safety standards.");
+        var cyber = Bill(appropriations.Id, "SB 1210", "Municipal cyber incident reports", "Sen. Cole", BillStatuses.Referred, "SB 1210 referred to Appropriations", "282.318", "Requires cities to report cyber incidents to the state. The bill cites section 282.318 and limits the report to operational impact.");
+        var coastal = Bill(appropriations.Id, "SB 1218", "Coastal permit timelines", "Sen. Hale", BillStatuses.ReportedFavorably, "SB 1218 reported favorably", "161.041", "Sets timelines for coastal construction permits. The bill cites section 161.041 and does not change local zoning.");
+        var publication = Bill(rules.Id, "SB 1302", "Rules publication corrections", "Sen. Brooks", BillStatuses.Referred, "SB 1302 referred to Rules", "11.242", "Corrects publication errors in the legislative rules. The bill cites section 11.242 and makes no substantive policy change.");
         db.Bills.AddRange(water, buses, cyber, coastal, publication);
 
         var now = DateTime.UtcNow;
@@ -70,6 +70,19 @@ public static class SeedData
             Audit(rules.Id, alex, publication, Actions.Referred, "SB 1302 referred to Rules", now.AddDays(-5)));
 
         await db.SaveChangesAsync();
+        await SessionCorpus.EnsureAsync(db);
+    }
+
+    public static async Task EnsureReadyAsync(IServiceProvider services)
+    {
+        var db = services.GetRequiredService<AppDbContext>();
+        if (!await db.Users.AnyAsync())
+        {
+            await EnsureSeededAsync(services);
+            return;
+        }
+
+        await SessionCorpus.EnsureAsync(db);
     }
 
     private static User User(string email, string name) => new()
@@ -87,7 +100,7 @@ public static class SeedData
         Role = role,
     };
 
-    private static Bill Bill(Guid committeeId, string number, string title, string sponsor, string status, string lastAction) => new()
+    private static Bill Bill(Guid committeeId, string number, string title, string sponsor, string status, string lastAction, string citation, string body) => new()
     {
         Id = Guid.NewGuid(),
         CommitteeId = committeeId,
@@ -95,6 +108,8 @@ public static class SeedData
         Title = title,
         Sponsor = sponsor,
         Status = status,
+        Citation = citation,
+        Body = body,
         LastActionText = lastAction,
         UpdatedAt = DateTime.UtcNow,
     };
