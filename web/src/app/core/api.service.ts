@@ -49,6 +49,21 @@ export interface AuditEvent {
   createdAt: string;
 }
 
+export interface SearchHit {
+  billId: string;
+  number: string;
+  title: string;
+  sponsor: string;
+  committeeId: string;
+  committee: string;
+  citation: string;
+  snippet: string;
+}
+
+export interface SearchBill extends SearchHit {
+  body: string;
+}
+
 export interface Brief {
   briefingId: string;
   draft: string;
@@ -70,15 +85,20 @@ export class ApiService {
     return this.http.post<LoginResult>('/api/auth/login', { email, password });
   }
 
-  bills(status?: string, q?: string) {
+  bills(status?: string) {
     let params = new HttpParams();
     if (status) {
       params = params.set('status', status);
     }
-    if (q) {
-      params = params.set('q', q);
-    }
     return this.http.get<Bill[]>('/api/bills', { params });
+  }
+
+  search(q: string) {
+    return this.http.get<SearchHit[]>('/api/search', { params: new HttpParams().set('q', q) });
+  }
+
+  searchBill(id: string) {
+    return this.http.get<SearchBill>(`/api/search/${id}`);
   }
 
   summary() {

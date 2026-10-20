@@ -1,0 +1,52 @@
+<article class="card">
+  <header class="card-head">
+    <h2>Search</h2>
+    @if (term()) {
+      <small>{{ hits().length }} hits for “{{ term() }}”</small>
+    }
+  </header>
+  @if (unavailable()) {
+    <p class="empty">Search is unavailable.</p>
+  } @else if (!term()) {
+    <p class="empty">Search by bill number, text, or statute citation.</p>
+  } @else if (hits().length === 0) {
+    <p class="empty">No bills matched.</p>
+  } @else {
+    <ul class="rows">
+      @for (hit of hits(); track hit.billId) {
+        <li class="clickable" (click)="open(hit)">
+          <span class="mark">{{ hit.number }}</span>
+          <span>
+            <strong>{{ hit.title }}</strong>
+            <small>{{ hit.sponsor }} · {{ hit.committee }} · {{ hit.citation }}</small>
+            @if (hit.snippet) {
+              <small class="snippet">
+                @for (part of snippetParts(hit.snippet); track $index) {
+                  @if (part.mark) {
+                    <mark>{{ part.text }}</mark>
+                  } @else {
+                    {{ part.text }}
+                  }
+                }
+              </small>
+            }
+          </span>
+          <span class="status">{{ canOpen(hit) ? 'Open' : 'Read only' }}</span>
+        </li>
+      }
+    </ul>
+  }
+</article>
+
+@if (reading(); as bill) {
+  <div class="backdrop" (click)="closeReading()">
+    <article class="dialog" (click)="$event.stopPropagation()">
+      <h2>{{ bill.number }} {{ bill.title }}</h2>
+      <p>{{ bill.sponsor }} · {{ bill.committee }} · section {{ bill.citation }}</p>
+      <p>{{ bill.body }}</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn" (click)="closeReading()">Close</button>
+      </div>
+    </article>
+  </div>
+}

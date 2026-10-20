@@ -17,6 +17,12 @@ export class ShellComponent {
     this.search.query.set(value);
   }
 
+  submitSearch(event: Event): void {
+    event.preventDefault();
+    const term = this.search.query().trim();
+    void this.router.navigate(['/search'], { queryParams: term ? { q: term } : {} });
+  }
+
   onCommittee(value: string): void {
     this.auth.selectCommittee(value);
   }

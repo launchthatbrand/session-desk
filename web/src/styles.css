@@ -156,6 +156,7 @@ a { color: #111827; }
 .rows li.clickable { cursor: pointer; }
 .rows strong, .rows small { display: block; }
 .rows small { color: #6b7280; font-size: 13px; }
+.snippet mark { background: #fde68a; color: inherit; border-radius: 3px; padding: 0 2px; }
 .mark {
   min-width: 72px;
   text-align: center;
