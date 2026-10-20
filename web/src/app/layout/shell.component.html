@@ -1,0 +1,53 @@
+<div class="page">
+  <div class="frame" [class.collapsed]="collapsed()">
+    <aside class="sidebar">
+      <div class="wordmark">Session Desk</div>
+      <nav>
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>
+          <span>Dashboard</span>
+        </a>
+        <a routerLink="/bills" routerLinkActive="active">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M14 3v5h5" /></svg>
+          <span>Bills</span>
+        </a>
+        <a routerLink="/calendar" routerLinkActive="active">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>
+          <span>Calendar</span>
+        </a>
+        <a routerLink="/audit" routerLinkActive="active">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12" /><circle cx="4" cy="6" r="1" /><circle cx="4" cy="12" r="1" /><circle cx="4" cy="18" r="1" /></svg>
+          <span>Audit</span>
+        </a>
+      </nav>
+      <div class="sidebar-foot">
+        <button type="button" class="text-btn" (click)="collapsed.set(!collapsed())">Collapse</button>
+        <button type="button" class="text-btn" (click)="signOut()">Sign out</button>
+      </div>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <label class="search">
+          <span class="sr">Search bills</span>
+          <input type="search" placeholder="Search bills" [value]="search.query()" (input)="onSearch($any($event.target).value)" />
+        </label>
+        <div class="top-actions">
+          <label class="sr" for="committee">Committee</label>
+          <select id="committee" [value]="auth.committeeId()" (change)="onCommittee($any($event.target).value)">
+            @for (committee of auth.committees(); track committee.id) {
+              <option [value]="committee.id">{{ committee.name }}</option>
+            }
+          </select>
+          <div class="user-chip">
+            <span class="avatar">{{ initial() }}</span>
+            <span>
+              <strong>{{ auth.user()?.displayName }}</strong>
+              <small>{{ auth.user()?.email }}</small>
+            </span>
+          </div>
+        </div>
+      </header>
+      <router-outlet />
+    </div>
+  </div>
+</div>

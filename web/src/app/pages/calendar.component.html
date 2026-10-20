@@ -1,0 +1,44 @@
+<article class="card">
+  <header class="card-head">
+    <h2>Calendar</h2>
+    @if (auth.role() === 'clerk') {
+      <button type="button" class="btn" (click)="open.set(true); error.set('')">Schedule hearing</button>
+    }
+  </header>
+  @if (hearings().length === 0) {
+    <p class="empty">No hearing scheduled.</p>
+  } @else {
+    <ul class="hearing-list">
+      @for (hearing of hearings(); track hearing.id) {
+        <li>
+          <strong>{{ when(hearing.startsAt) }}</strong>
+          <p class="muted">{{ auth.committeeName() }} · Room {{ hearing.room }}</p>
+          @for (bill of hearing.bills; track bill.id) {
+            <p>{{ bill.number }} {{ bill.title }}</p>
+          }
+        </li>
+      }
+    </ul>
+  }
+</article>
+
+@if (open()) {
+  <div class="backdrop" (click)="open.set(false)">
+    <form class="dialog" [formGroup]="form" (click)="$event.stopPropagation()" (ngSubmit)="save()">
+      <h2>Schedule hearing</h2>
+      <label>When
+        <input type="datetime-local" formControlName="startsAt" />
+      </label>
+      <label>Room
+        <input type="text" formControlName="room" />
+      </label>
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+      <div class="dialog-actions">
+        <button type="button" class="text-btn" (click)="open.set(false)">Cancel</button>
+        <button type="submit" class="btn">Save</button>
+      </div>
+    </form>
+  </div>
+}

@@ -1,0 +1,79 @@
+<article class="card">
+  <header class="card-head">
+    <h2>Bills</h2>
+    @if (canWrite()) {
+      <button type="button" class="btn" (click)="openDialog()">Record action</button>
+    }
+  </header>
+  <div class="pills">
+    @for (pill of [{ id: '', label: 'All' }, { id: 'referred', label: 'Referred' }, { id: 'on_agenda', label: 'On agenda' }, { id: 'reported_favorably', label: 'Reported favorably' }, { id: 'reported_unfavorably', label: 'Reported unfavorably' }]; track pill.id) {
+      <button type="button" class="pill" [class.active]="filter() === pill.id" (click)="setFilter(pill.id)">{{ pill.label }}</button>
+    }
+  </div>
+  @if (bills().length === 0) {
+    <p class="empty">No bills in this committee.</p>
+  } @else {
+    <ul class="rows">
+      @for (bill of bills(); track bill.id) {
+        <li [class.clickable]="canWrite()" (click)="canWrite() && openDialog(bill)">
+          <span class="mark">{{ bill.number }}</span>
+          <span>
+            <strong>{{ bill.title }}</strong>
+            <small>{{ bill.sponsor }} · {{ bill.lastAction }}</small>
+          </span>
+          <span class="status" [attr.data-status]="bill.status">{{ statusLabel(bill.status) }}</span>
+        </li>
+      }
+    </ul>
+  }
+</article>
+
+@if (open()) {
+  <div class="backdrop" (click)="close()">
+    <form class="dialog" [formGroup]="form" (click)="$event.stopPropagation()" (ngSubmit)="save()">
+      <h2>Record action</h2>
+      <label>Bill
+        <select formControlName="billId">
+          @for (bill of bills(); track bill.id) {
+            <option [value]="bill.id">{{ bill.number }} {{ bill.title }}</option>
+          }
+        </select>
+      </label>
+      @if (auth.role() === 'analyst') {
+        <label>Staff note
+          <textarea formControlName="note" rows="4"></textarea>
+        </label>
+      } @else {
+        <label>Action
+          <select formControlName="action">
+            <option value="bill.placed_on_agenda">Place on agenda</option>
+            <option value="bill.reported_favorably">Report favorably</option>
+            <option value="bill.reported_unfavorably">Report unfavorably</option>
+            <option value="bill.postponed">Temporarily postpone</option>
+            <option value="bill.note_added">Staff note</option>
+          </select>
+        </label>
+        @if (form.controls.action.value === 'bill.placed_on_agenda') {
+          <label>Hearing
+            <input type="datetime-local" formControlName="hearingStartsAt" />
+          </label>
+          <label>Room
+            <input type="text" formControlName="room" />
+          </label>
+        }
+        @if (form.controls.action.value === 'bill.note_added') {
+          <label>Staff note
+            <textarea formControlName="note" rows="4"></textarea>
+          </label>
+        }
+      }
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+      <div class="dialog-actions">
+        <button type="button" class="text-btn" (click)="close()">Cancel</button>
+        <button type="submit" class="btn">Save</button>
+      </div>
+    </form>
+  </div>
+}

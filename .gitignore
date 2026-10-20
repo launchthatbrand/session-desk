@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+TestResults/
+web/node_modules/
+web/dist/
+web/.angular/
+*.log
+appsettings.*.local.json

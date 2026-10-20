@@ -1,0 +1,100 @@
+<section class="dash">
+  <div class="hero-grid">
+    <article class="card">
+      <header class="card-head">
+        <h2>Referred, not heard</h2>
+        <span class="muted">7 days</span>
+      </header>
+      <p class="hero-count">{{ summary()?.referred ?? 0 }}</p>
+      <p class="muted">{{ auth.committeeName() }} bills waiting for a hearing</p>
+      <div class="legend">
+        <span><i class="swatch referred"></i>Referred</span>
+        <span><i class="swatch agenda"></i>On agenda</span>
+        <span><i class="swatch reported"></i>Reported</span>
+      </div>
+      <div class="chart">
+        @for (bar of bars(); track bar.label) {
+          <div class="bar-col">
+            <div class="stack-bar">
+              <div class="seg reported" [style.height]="barHeight(bar.reported)"></div>
+              <div class="seg agenda" [style.height]="barHeight(bar.agenda)"></div>
+              <div class="seg referred" [style.height]="barHeight(bar.referred)"></div>
+            </div>
+            <span>{{ bar.label }}</span>
+          </div>
+        }
+      </div>
+    </article>
+    <article class="card">
+      <header class="card-head"><h2>Committee</h2></header>
+      <p class="committee-name">{{ auth.committeeName() }}</p>
+      <p class="muted capitalize">{{ auth.role() }} · {{ (summary()?.referred ?? 0) + (summary()?.onAgenda ?? 0) + reported() }} bills</p>
+      <div class="mix">
+        <div class="seg referred" [style.width]="mixWidth(summary()?.referred ?? 0)"></div>
+        <div class="seg agenda" [style.width]="mixWidth(summary()?.onAgenda ?? 0)"></div>
+        <div class="seg reported" [style.width]="mixWidth(reported())"></div>
+      </div>
+      <p class="muted">Referred, on agenda, reported</p>
+    </article>
+  </div>
+
+  <div class="stat-row">
+    <article class="card stat"><p class="hero-count">{{ summary()?.referred ?? 0 }}</p><p>Referred</p></article>
+    <article class="card stat"><p class="hero-count">{{ summary()?.onAgenda ?? 0 }}</p><p>On agenda</p></article>
+    <article class="card stat"><p class="hero-count">{{ reported() }}</p><p>Reported</p></article>
+  </div>
+
+  <div class="split">
+    <article class="card">
+      <header class="card-head">
+        <h2>Moved recently</h2>
+        <a routerLink="/bills">View all</a>
+      </header>
+      @if (bills().length === 0) {
+        <p class="empty">No bills in this committee.</p>
+      } @else {
+        <ul class="rows">
+          @for (bill of bills(); track bill.id) {
+            <li>
+              <span class="mark">{{ bill.number }}</span>
+              <span>
+                <strong>{{ bill.title }}</strong>
+                <small>{{ bill.sponsor }}</small>
+              </span>
+              <span class="status" [attr.data-status]="bill.status">{{ statusLabel(bill.status) }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+    <div class="side-cards">
+      <article class="card">
+        <header class="card-head"><h2>Next hearing</h2></header>
+        @if (hearing(); as next) {
+          <p class="committee-name">{{ when(next.startsAt) }}</p>
+          <p class="muted">Room {{ next.room }}</p>
+          @for (bill of next.bills; track bill.id) {
+            <p>{{ bill.number }} {{ bill.title }}</p>
+          }
+        } @else {
+          <p class="empty">No hearing scheduled.</p>
+        }
+      </article>
+      <article class="card">
+        <header class="card-head"><h2>Activity</h2></header>
+        <ul class="rows compact">
+          @for (event of activity(); track event.id) {
+            <li>
+              <span class="mark">{{ event.billNumber || 'Desk' }}</span>
+              <span>
+                <strong>{{ event.detail }}</strong>
+                <small>{{ event.actor }}</small>
+              </span>
+              <span class="muted">{{ when(event.createdAt) }}</span>
+            </li>
+          }
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>

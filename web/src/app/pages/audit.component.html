@@ -1,0 +1,15 @@
+<article class="card">
+  <header class="card-head"><h2>Audit</h2></header>
+  <ul class="rows">
+    @for (event of events(); track event.id) {
+      <li>
+        <span class="mark">{{ event.billNumber || 'Desk' }}</span>
+        <span>
+          <strong>{{ event.detail }}</strong>
+          <small>{{ event.actor }}</small>
+        </span>
+        <span class="muted">{{ when(event.createdAt) }}</span>
+      </li>
+    }
+  </ul>
+</article>

@@ -1,0 +1,99 @@
+name: Deploy session-desk
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-session-desk
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io/launchthatapp
+
+jobs:
+  test:
+    name: API tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Test
+        run: dotnet test tests/SessionDesk.Api.Tests/SessionDesk.Api.Tests.csproj --configuration Release
+
+  build:
+    name: Build and push images
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.tags.outputs.api }}
+      web: ${{ steps.tags.outputs.web }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Require GH_PACKAGES_TOKEN
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: |
+          if [ -z "${GH_PACKAGES_TOKEN}" ]; then
+            echo "Missing secret GH_PACKAGES_TOKEN (needed to push ghcr.io/launchthatapp/*)."
+            exit 1
+          fi
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GH_PACKAGES_TOKEN }}
+      - name: Resolve image tags
+        id: tags
+        run: |
+          set -euo pipefail
+          echo "api=${REGISTRY}/session-desk-api:${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "web=${REGISTRY}/session-desk-web:${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+      - name: Build and push API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.api
+          push: true
+          tags: ${{ steps.tags.outputs.api }}
+      - name: Build and push web
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.web
+          push: true
+          tags: ${{ steps.tags.outputs.web }}
+
+  deploy:
+    name: Roll k3s Deployments
+    needs: build
+    runs-on: [self-hosted, linux, x64, env:launchthat]
+    env:
+      KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      API_IMAGE: ${{ needs.build.outputs.api }}
+      WEB_IMAGE: ${{ needs.build.outputs.web }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Apply manifests
+        run: kubectl apply -f deploy/k8s/
+      - name: Roll images
+        run: |
+          set -euo pipefail
+          kubectl -n launchthat set image deployment/session-desk-api "session-desk-api=${API_IMAGE}"
+          kubectl -n launchthat set image deployment/session-desk-web "session-desk-web=${WEB_IMAGE}"
+          kubectl -n launchthat rollout status deployment/session-desk-api --timeout=180s
+          kubectl -n launchthat rollout status deployment/session-desk-web --timeout=180s
