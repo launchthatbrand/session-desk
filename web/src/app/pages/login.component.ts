@@ -15,6 +15,11 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly forms = inject(FormBuilder);
   readonly error = signal('');
+  readonly accounts = [
+    { role: 'clerk', name: 'Alex Morgan', email: 'alex.morgan@sessiondesk.local' },
+    { role: 'analyst', name: 'J. Patel', email: 'j.patel@sessiondesk.local' },
+    { role: 'viewer', name: 'Casey Nguyen', email: 'casey.nguyen@sessiondesk.local' },
+  ];
   readonly form = this.forms.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
@@ -24,6 +29,11 @@ export class LoginComponent {
     if (this.auth.token()) {
       void this.router.navigateByUrl('/');
     }
+  }
+
+  signInAs(email: string): void {
+    this.form.setValue({ email, password: 'O19GZJv2jFwmgpNa8jm1' });
+    this.submit();
   }
 
   submit(): void {
