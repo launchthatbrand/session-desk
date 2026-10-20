@@ -194,6 +194,20 @@ a { color: #111827; }
   gap: 14px;
 }
 .login-card h1 { font-size: 22px; }
+.demo-logins { display: flex; flex-direction: column; gap: 8px; }
+.demo-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  background: #f3f4f6;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  text-align: left;
+}
+.demo-btn small { color: #6b7280; font-size: 13px; }
 .login-card p { color: #6b7280; }
 .login-card label, .dialog label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #6b7280; }
 .login-card input { width: 100%; }

@@ -2,6 +2,14 @@
   <form class="login-card" [formGroup]="form" (ngSubmit)="submit()">
     <h1>Session Desk</h1>
     <p>Sign in to your committee desk</p>
+    <div class="demo-logins">
+      @for (account of accounts; track account.email) {
+        <button type="button" class="demo-btn" (click)="signInAs(account.email)">
+          Sign in as {{ account.role }}
+          <small>{{ account.name }}</small>
+        </button>
+      }
+    </div>
     <label>Email
       <input type="email" formControlName="email" autocomplete="username" />
     </label>
