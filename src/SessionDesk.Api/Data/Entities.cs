@@ -25,6 +25,17 @@ public static class Actions
     public const string NoteAdded = "bill.note_added";
     public const string HearingScheduled = "hearing.scheduled";
     public const string Referred = "bill.referred";
+    public const string BriefingRequested = "ai.briefing_requested";
+    public const string DraftWithheld = "ai.draft_withheld";
+    public const string DraftDiscarded = "ai.draft_discarded";
+}
+
+public static class BriefingStatuses
+{
+    public const string Pending = "pending";
+    public const string Accepted = "accepted";
+    public const string Discarded = "discarded";
+    public const string Withheld = "withheld";
 }
 
 public sealed class User
@@ -95,7 +106,31 @@ public sealed class AuditEvent
     public Guid? BillId { get; set; }
     public string Action { get; set; } = "";
     public string Detail { get; set; } = "";
+    public Guid? TraceId { get; set; }
     public DateTime CreatedAt { get; set; }
     public User Actor { get; set; } = null!;
     public Bill? Bill { get; set; }
+    public AiBriefing? Trace { get; set; }
+}
+
+public sealed class AiBriefing
+{
+    public Guid Id { get; set; }
+    public Guid CommitteeId { get; set; }
+    public Guid BillId { get; set; }
+    public Guid ActorUserId { get; set; }
+    public string Model { get; set; } = "";
+    public string PromptVersion { get; set; } = "";
+    public string RetrievedBillNumbers { get; set; } = "";
+    public string DraftText { get; set; } = "";
+    public string Status { get; set; } = BriefingStatuses.Pending;
+    public string? WithholdReason { get; set; }
+    public string? AcceptedText { get; set; }
+    public int? InputTokens { get; set; }
+    public int? OutputTokens { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? DecidedAt { get; set; }
+    public Committee Committee { get; set; } = null!;
+    public Bill Bill { get; set; } = null!;
+    public User Actor { get; set; } = null!;
 }

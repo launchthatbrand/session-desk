@@ -32,6 +32,21 @@
   <div class="backdrop" (click)="close()">
     <form class="dialog" [formGroup]="form" (click)="$event.stopPropagation()" (ngSubmit)="save()">
       <h2>Record action</h2>
+      @if (canWrite()) {
+        <button type="button" class="text-btn" (click)="draftBrief()" [disabled]="drafting()">
+          {{ drafting() ? 'Drafting…' : 'Draft brief' }}
+        </button>
+      }
+      @if (brief(); as draft) {
+        <p class="generated">Generated · {{ draft.model }} · {{ draft.promptVersion }}</p>
+        <label>Draft
+          <textarea formControlName="note" rows="5"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="text-btn" (click)="discardBrief()">Discard</button>
+          <button type="button" class="btn" (click)="acceptBrief()">Accept as note</button>
+        </div>
+      }
       <label>Bill
         <select formControlName="billId">
           @for (bill of bills(); track bill.id) {
@@ -39,11 +54,11 @@
           }
         </select>
       </label>
-      @if (auth.role() === 'analyst') {
+      @if (auth.role() === 'analyst' && !brief()) {
         <label>Staff note
           <textarea formControlName="note" rows="4"></textarea>
         </label>
-      } @else {
+      } @else if (!brief()) {
         <label>Action
           <select formControlName="action">
             <option value="bill.placed_on_agenda">Place on agenda</option>

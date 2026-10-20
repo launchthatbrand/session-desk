@@ -20,6 +20,15 @@ export class AuditComponent {
     });
   }
 
+  actionLabel(action: string): string {
+    const labels: Record<string, string> = {
+      'ai.briefing_requested': 'Brief requested',
+      'ai.draft_withheld': 'Brief withheld',
+      'ai.draft_discarded': 'Brief discarded',
+    };
+    return labels[action] ?? '';
+  }
+
   when(value: string): string {
     return new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/New_York',

@@ -1,6 +1,6 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ApiService, Bill } from '../core/api.service';
+import { ApiService, Bill, Brief } from '../core/api.service';
 import { AuthService, SearchService } from '../core/auth.service';
 
 @Component({
@@ -17,6 +17,8 @@ export class BillsComponent {
   readonly filter = signal('');
   readonly open = signal(false);
   readonly error = signal('');
+  readonly brief = signal<Brief | null>(null);
+  readonly drafting = signal(false);
   private readonly reload = signal(0);
   readonly form = this.forms.nonNullable.group({
     billId: ['', Validators.required],
@@ -49,6 +51,7 @@ export class BillsComponent {
 
   openDialog(bill?: Bill): void {
     this.error.set('');
+    this.brief.set(null);
     this.form.reset({
       billId: bill?.id ?? this.bills()[0]?.id ?? '',
       action: this.auth.role() === 'analyst' ? 'bill.note_added' : 'bill.placed_on_agenda',
@@ -61,6 +64,59 @@ export class BillsComponent {
 
   close(): void {
     this.open.set(false);
+  }
+
+  draftBrief(): void {
+    const billId = this.form.controls.billId.value;
+    if (!billId) {
+      this.error.set('Choose a bill.');
+      return;
+    }
+    this.error.set('');
+    this.drafting.set(true);
+    this.api.brief(billId).subscribe({
+      next: (brief) => {
+        this.brief.set(brief);
+        this.form.controls.note.setValue(brief.draft);
+        this.drafting.set(false);
+      },
+      error: (error) => {
+        this.brief.set(null);
+        this.drafting.set(false);
+        const message = error?.error?.error;
+        this.error.set(typeof message === 'string' ? message : 'The desk could not draft that brief.');
+      },
+    });
+  }
+
+  acceptBrief(): void {
+    const current = this.brief();
+    const billId = this.form.controls.billId.value;
+    if (!current || !billId) {
+      return;
+    }
+    this.api.decideBrief(billId, current.briefingId, 'accept', this.form.controls.note.value).subscribe({
+      next: () => {
+        this.open.set(false);
+        this.reload.update((value) => value + 1);
+      },
+      error: () => this.error.set('The desk could not accept that brief.'),
+    });
+  }
+
+  discardBrief(): void {
+    const current = this.brief();
+    const billId = this.form.controls.billId.value;
+    if (!current || !billId) {
+      return;
+    }
+    this.api.decideBrief(billId, current.briefingId, 'discard').subscribe({
+      next: () => {
+        this.brief.set(null);
+        this.form.controls.note.setValue('');
+      },
+      error: () => this.error.set('The desk could not discard that brief.'),
+    });
   }
 
   save(): void {

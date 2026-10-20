@@ -24,6 +24,7 @@ public sealed class AuditController(AppDbContext db, CommitteeContext scope) : C
                 item.Detail,
                 item.Actor.DisplayName,
                 item.Action,
+                item.TraceId,
                 item.CreatedAt))
             .ToListAsync();
         return Ok(events);
@@ -36,4 +37,5 @@ public sealed record AuditResponse(
     string Detail,
     string Actor,
     string Action,
+    Guid? TraceId,
     DateTime CreatedAt);
